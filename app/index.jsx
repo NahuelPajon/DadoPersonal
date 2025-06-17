@@ -24,6 +24,8 @@ export default function Index() {
   }, [dado, isScrambling]);
 
   const handlePress = () => {
+    if (isScrambling) return; // Evita múltiples scrambles
+
     setIsScrambling(true);
 
     // Scramble: cambia el dado rápidamente durante la animación
