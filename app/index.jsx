@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, TouchableOpacity, View } from "react-native";
 import useDado from "./useDado";
 
@@ -14,36 +14,54 @@ const dadoImages = {
 export default function Index() {
   const { dado, generarDado } = useDado();
   const [currentDado, setCurrentDado] = useState(dado);
+  const [isScrambling, setIsScrambling] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const scrambleInterval = useRef(null);
+
+  useEffect(() => {
+    // Solo actualiza el dado mostrado cuando NO está mezclando
+    if (!isScrambling) setCurrentDado(dado);
+  }, [dado, isScrambling]);
 
   const handlePress = () => {
+    setIsScrambling(true);
+
+    // Scramble: cambia el dado rápidamente durante la animación
+    scrambleInterval.current = setInterval(() => {
+      setCurrentDado(Math.floor(Math.random() * 6) + 1);
+    }, 60);
+
     // Inicia la animación de giro
-    Animated.sequence([
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    Animated.timing(rotateAnim, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+    }).start(() => {
       rotateAnim.setValue(0); // Reinicia la animación
-      generarDado(); // Cambia el número del dado
+      clearInterval(scrambleInterval.current);
+      setIsScrambling(false);
+      generarDado(); // Cambia el número del dado (el hook actualizará currentDado)
     });
   };
-
-  // Actualiza el dado mostrado cuando cambia el valor externo
-  if (dado !== currentDado) setCurrentDado(dado);
-
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
 
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handlePress} style={styles.button}>
         <Animated.Image
           source={dadoImages[currentDado]}
-          style={{ width: 200, height: 200, transform: [{ rotate }] }}
+          style={{
+            width: 200,
+            height: 200,
+            transform: [
+              {
+                rotate: rotateAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+            ],
+            
+          }}
         />
       </TouchableOpacity>
     </View>
